@@ -1,338 +1,246 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scan Code-barres • OpenFoodFacts</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Code-Barres • OpenFoodFacts</title>
   <style>
-    :root{
-      --bg:#0f172a; --card:#0b1220; --accent:#8b5cf6; --muted:#94a3b8; --glass: rgba(255,255,255,0.03);
+    body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; background:linear-gradient(180deg,#071029 0%, #081428 100%); color:#e6eef8;
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      display:flex; align-items:flex-start; justify-content:center; padding:24px;
+
+    h1 {
+      margin: 10px;
+      font-size: 1.3rem;
+      text-align: center;
     }
-    .wrap{width:100%; max-width:960px;}
-    header{display:flex; align-items:center; gap:16px; margin-bottom:18px}
-    h1{font-size:1.1rem; margin:0}
-    p.lead{margin:0;color:var(--muted); font-size:0.95rem}
-    .grid{display:grid; grid-template-columns: 1fr 360px; gap:18px;}
-    @media (max-width:880px){ .grid{grid-template-columns:1fr;}}
-    .card{background:var(--card); border-radius:12px; padding:14px; box-shadow: 0 6px 18px rgba(2,6,23,0.6); }
-    /* video area */
-    .video-wrap{display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; text-align:center;}
-    video{width:100%; height:auto; border-radius:8px; background: #000;}
-    .controls{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center;}
-    select, button, input[type=file]{
-      padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:var(--glass); color:inherit; font-weight:600;
+
+    #video {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
     }
-    button.primary{background:linear-gradient(135deg,var(--accent), #6d28d9); border: none; color:white;}
-    .result{display:flex; flex-direction:column; gap:8px;}
-    .product{display:flex; gap:12px; align-items:flex-start;}
-    .product img{width:96px; height:96px; object-fit:cover; border-radius:8px; background:#071024; border:1px solid rgba(255,255,255,0.03)}
-    .meta{flex:1}
-    .meta h2{margin:0 0 6px 0; font-size:1rem}
-    .meta p{margin:0; color:var(--muted); font-size:0.9rem}
-    table{width:100%; border-collapse:collapse; margin-top:8px}
-    td,th{padding:8px 6px; text-align:left; border-bottom:1px dashed rgba(255,255,255,0.03); font-size:0.95rem}
-    th{color:var(--muted); font-weight:600; width:45%}
-    .small-note{color:var(--muted); font-size:0.8rem}
-    .notfound{color:#ffcccb; font-weight:700}
-    footer{margin-top:14px; color:var(--muted); font-size:0.85rem; text-align:center}
+
+    .scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      border: 2px solid red;
+      border-radius: 8px;
+    }
+
+    /* zone de scan centrale */
+    .scan-area {
+      position: absolute;
+      top: 25%;
+      left: 10%;
+      width: 80%;
+      height: 30%;
+      border: 2px solid red;
+      box-sizing: border-box;
+      border-radius: 4px;
+    }
+
+    /* ligne laser */
+    .scan-line {
+      position: absolute;
+      top: 25%;
+      left: 10%;
+      width: 80%;
+      height: 2px;
+      background: red;
+      animation: moveLine 2s linear infinite;
+      opacity: 0.8;
+    }
+
+    @keyframes moveLine {
+      0% { top: 25%; }
+      100% { top: 55%; }
+    }
+
+    #barcode {
+      margin-top: 15px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: red;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .result {
+      margin-top: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .result img {
+      width: 100%;
+      max-height: 180px;
+      object-fit: contain;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .info {
+      text-align: left;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .info strong {
+      color: #ff5c5c;
+    }
+
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Scanner un code-barres — Open Food Facts</h1>
-        <p class="lead">Scannez avec votre téléphone, récupérez sucres, lipides, glucides, énergie... puis testez via GitHub Pages.</p>
-      </div>
-    </header>
+  <h1>Scanner un Code-Barres</h1>
 
-    <div class="grid">
-      <div class="card">
-        <div class="video-wrap">
-          <video id="video" playsinline></video>
-          <canvas id="canvas" style="display:none"></canvas>
-          <div class="controls">
-            <select id="deviceSelect"></select>
-            <button id="startBtn" class="primary">Démarrer la caméra</button>
-            <button id="stopBtn">Arrêter</button>
-            <label style="display:inline-flex;align-items:center;gap:8px;">
-              <input id="fileInput" type="file" accept="image/*" />
-              <span class="small-note">Importer une image</span>
-            </label>
-          </div>
-          <div style="margin-top:8px;"><span class="small-note">Si aucune caméra n'apparaît, vérifiez les autorisations de votre navigateur (HTTPS requis).</span></div>
-        </div>
-      </div>
+  <div class="scanner-container">
+    <video id="video" playsinline></video>
+    <div class="scan-area"></div>
+    <div class="scan-line"></div>
+  </div>
 
-      <div class="card">
-        <div class="result" id="resultArea">
-          <div id="status" class="small-note">Aucun scan pour l'instant.</div>
-          <div id="productContainer" style="display:none">
-            <div class="product">
-              <img id="productImage" src="" alt="product image" />
-              <div class="meta">
-                <h2 id="productName">—</h2>
-                <p id="brands" class="small-note">—</p>
-                <p id="code" class="small-note">EAN: —</p>
-              </div>
-            </div>
+  <button id="startBtn">Démarrer le scan</button>
+  <button id="stopBtn">Arrêter</button>
 
-            <table aria-live="polite">
-              <tbody>
-                <tr><th>Énergie (kcal / 100g)</th><td id="energy">—</td></tr>
-                <tr><th>Glucides (g / 100g)</th><td id="carbohydrates">—</td></tr>
-                <tr><th>Sucres (g / 100g)</th><td id="sugars">—</td></tr>
-                <tr><th>Lipides (g / 100g)</th><td id="fat">—</td></tr>
-                <tr><th>Acides gras saturés (g / 100g)</th><td id="saturated-fat">—</td></tr>
-                <tr><th>Protéines (g / 100g)</th><td id="proteins">—</td></tr>
-                <tr><th>Sel (g / 100g)</th><td id="salt">—</td></tr>
-                <tr><th>Taille d'emballage</th><td id="servingSize">—</td></tr>
-                <tr><th>État</th><td id="statusText">—</td></tr>
-              </tbody>
-            </table>
-          </div>
+  <div id="barcode">Aucun code détecté</div>
 
-          <div id="notfound" style="display:none" class="notfound">Produit non trouvé dans Open Food Facts.</div>
-        </div>
-
-        <footer>
-          <div>API utilisée : <strong>Open Food Facts</strong> — <span id="apiUrl"></span></div>
-          <div style="margin-top:6px">Pour publier : push sur GitHub puis activez GitHub Pages (branche main, dossier /).</div>
-        </footer>
-      </div>
+  <div class="result" id="result" style="display:none;">
+    <img id="productImage" src="" alt="">
+    <div class="info">
+      <div><strong>Nom :</strong> <span id="productName">-</span></div>
+      <div><strong>Énergie :</strong> <span id="energy">-</span></div>
+      <div><strong>Glucides :</strong> <span id="carbs">-</span></div>
+      <div><strong>Sucres :</strong> <span id="sugar">-</span></div>
+      <div><strong>Lipides :</strong> <span id="fat">-</span></div>
+      <div><strong>Protéines :</strong> <span id="protein">-</span></div>
+      <div><strong>Sel :</strong> <span id="salt">-</span></div>
     </div>
   </div>
 
-  <!-- ZXing library (UMD build). Si besoin, changez la version. -->
   <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
-
   <script>
-    // Elements
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const deviceSelect = document.getElementById('deviceSelect');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const fileInput = document.getElementById('fileInput');
-    const status = document.getElementById('status');
-    const productContainer = document.getElementById('productContainer');
-    const notfound = document.getElementById('notfound');
-    const apiUrlEl = document.getElementById('apiUrl');
+    const video = document.getElementById("video");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const barcodeEl = document.getElementById("barcode");
+    const resultBox = document.getElementById("result");
+    const codeReader = new ZXing.BrowserMultiFormatReader();
 
-    // fields
-    const setText = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text ?? '—'; }
-    const setImage = (src) => { document.getElementById('productImage').src = src || ''; }
+    let scanning = false;
+    let lastCode = null;
 
-    // OpenFoodFacts API base
-    const OFF_API_BASE = 'https://world.openfoodfacts.org/api/v0/product/';
-    apiUrlEl.textContent = OFF_API_BASE + '{barcode}.json';
+    async function startScan() {
+      if (scanning) return;
+      scanning = true;
+      barcodeEl.textContent = "Initialisation de la caméra...";
+      resultBox.style.display = "none";
 
-    // ZXing reader
-    let codeReader = null;
-    let currentStreamDeviceId = null;
-
-    // Init reader & device list
-    async function initScanner() {
-      codeReader = new ZXing.BrowserMultiFormatReader();
       try {
         const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-        deviceSelect.innerHTML = '';
-        if(devices.length === 0) {
-          const opt = document.createElement('option');
-          opt.value = '';
-          opt.text = 'Aucun appareil vidéo détecté';
-          deviceSelect.appendChild(opt);
+        const deviceId = devices.length > 0 ? devices[0].deviceId : null;
+        if (!deviceId) {
+          barcodeEl.textContent = "Aucune caméra détectée";
+          scanning = false;
+          return;
+        }
+
+        barcodeEl.textContent = "Scan en cours...";
+
+        codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+          if (result) {
+            const code = result.text.trim();
+            if (code !== lastCode) {
+              lastCode = code;
+              barcodeEl.textContent = "Code détecté : " + code;
+              fetchProductInfo(code);
+            }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        barcodeEl.textContent = "Erreur : " + err.message;
+        scanning = false;
+      }
+    }
+
+    function stopScan() {
+      scanning = false;
+      codeReader.reset();
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      barcodeEl.textContent += " — Scan arrêté.";
+    }
+
+    async function fetchProductInfo(code) {
+      const apiUrl = `https://world.openfoodfacts.org/api/v0/product/${code}.json`;
+      barcodeEl.textContent = "Recherche du produit...";
+
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        if (data.status === 1 && data.product) {
+          const p = data.product;
+          resultBox.style.display = "block";
+          document.getElementById("productImage").src =
+            p.image_front_small_url || p.image_url || "";
+          document.getElementById("productName").textContent =
+            p.product_name || "Inconnu";
+
+          const n = p.nutriments || {};
+          const get = (k) => n[k] !== undefined ? n[k] + " g" : "-";
+
+          document.getElementById("energy").textContent =
+            (n["energy-kcal_100g"] ? n["energy-kcal_100g"] + " kcal" : "-");
+          document.getElementById("carbs").textContent = get("carbohydrates_100g");
+          document.getElementById("sugar").textContent = get("sugars_100g");
+          document.getElementById("fat").textContent = get("fat_100g");
+          document.getElementById("protein").textContent = get("proteins_100g");
+          document.getElementById("salt").textContent = get("salt_100g");
+
+          barcodeEl.textContent = "Produit trouvé pour le code : " + code;
         } else {
-          devices.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d.deviceId;
-            opt.text = d.label || `Caméra ${deviceSelect.length+1}`;
-            deviceSelect.appendChild(opt);
-          });
+          resultBox.style.display = "block";
+          document.getElementById("productImage").src = "";
+          document.getElementById("productName").textContent = "Produit non trouvé";
+          barcodeEl.textContent = "Produit non trouvé dans Open Food Facts.";
         }
       } catch (err) {
         console.error(err);
-        status.textContent = 'Impossible de lister les caméras. Vérifiez les permissions (HTTPS requis).';
+        barcodeEl.textContent = "Erreur API : " + err.message;
       }
     }
 
-    // Start scanning from selected device
-    async function startCamera() {
-      if(!codeReader) await initScanner();
-      const deviceId = deviceSelect.value || undefined;
-      status.textContent = 'Démarrage caméra...';
-      productContainer.style.display = 'none';
-      notfound.style.display = 'none';
-
-      try {
-        // decodeFromVideoDevice will handle streaming and callbacks
-        currentStreamDeviceId = deviceId;
-        codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
-          if (result) {
-            // Got a barcode
-            status.textContent = 'Code détecté : ' + result.text;
-            // stop continuous decoding gracefully to avoid duplicates
-            stopCamera();
-            handleBarcode(result.text);
-          } else {
-            // err may be NotFoundException frequently while scanning
-            // ignore noisy errors
-            // console.debug(err)
-          }
-        });
-      } catch (e) {
-        console.error(e);
-        status.textContent = 'Erreur démarrage caméra : ' + (e.message || e);
-      }
-    }
-
-    // Stop scanning
-    function stopCamera() {
-      try {
-        if (codeReader) {
-          codeReader.reset(); // stops the video stream & decoding callbacks
-        }
-        // stop tracks from video element as extra safety
-        if (video && video.srcObject) {
-          video.srcObject.getTracks().forEach(t => t.stop());
-          video.srcObject = null;
-        }
-        status.textContent = 'Caméra arrêtée.';
-      } catch (e) {
-        console.warn('stopCamera:', e);
-      }
-    }
-
-    // Handle found barcode
-    async function handleBarcode(barcode) {
-      // normalize barcode (digits only)
-      barcode = String(barcode).trim();
-      status.textContent = 'Recherche du produit (' + barcode + ')...';
-      productContainer.style.display = 'none';
-      notfound.style.display = 'none';
-
-      try {
-        const resp = await fetch(OFF_API_BASE + encodeURIComponent(barcode) + '.json');
-        if (!resp.ok) throw new Error('Erreur réseau ' + resp.status);
-        const data = await resp.json();
-        if (data.status === 1 && data.product) {
-          displayProduct(data.product, barcode);
-          status.textContent = 'Produit trouvé.';
-        } else {
-          status.textContent = 'Produit non trouvé.';
-          notfound.style.display = 'block';
-        }
-      } catch (e) {
-        console.error(e);
-        status.textContent = 'Erreur requête API : ' + (e.message || e);
-      }
-    }
-
-    // Display product details and nutriments
-    function displayProduct(product, barcode) {
-      productContainer.style.display = 'block';
-      notfound.style.display = 'none';
-
-      setText('productName', product.product_name || product.generic_name || 'Nom non disponible');
-      setText('brands', product.brands || '');
-      setText('code', barcode);
-
-      // image
-      const img = product.image_small_url || product.image_front_small_url || product.image_url || '';
-      setImage(img);
-
-      // nutriments: prefer per 100g keys with suffix _100g
-      const n = product.nutriments || {};
-      const getN = (keys) => {
-        for (const k of keys) {
-          if (n[k] !== undefined) return n[k];
-        }
-        return '—';
-      };
-
-      setText('energy', (() => {
-        // energy may be available in kcl or kj
-        const en_kcal = getN(['energy-kcal_100g','energy-kcal_100g_value','energy-kcal']);
-        if(en_kcal && en_kcal !== '—') return en_kcal + ' kcal';
-        const en_kj = getN(['energy_100g','energy_100g_value','energy']);
-        if(en_kj !== '—') {
-          // if value likely in kJ, convert approx to kcal (1 kcal ≈ 4.184 kJ)
-          const num = Number(en_kj);
-          if (!isNaN(num)) return Math.round(num/4.184) + ' kcal ('+ num + ' kJ)';
-          return en_kj;
-        }
-        return '—';
-      })());
-
-      setText('carbohydrates', getN(['carbohydrates_100g','carbohydrates']));
-      setText('sugars', getN(['sugars_100g','sugars']));
-      setText('fat', getN(['fat_100g','fat']));
-      setText('saturated-fat', getN(['saturated-fat_100g','saturated_fat_100g','saturated-fat']));
-      setText('proteins', getN(['proteins_100g','proteins']));
-      setText('salt', getN(['salt_100g','salt']));
-      setText('servingSize', product.serving_size || product.quantity || '—');
-
-      setText('statusText', product.status ? 'OK' : (product.status_verbose || '—'));
-    }
-
-    // FILE INPUT fallback: decode from an uploaded image
-    fileInput.addEventListener('change', async (ev) => {
-      const f = ev.target.files && ev.target.files[0];
-      if (!f) return;
-      status.textContent = 'Décodage de l\'image...';
-      notfound.style.display = 'none';
-      productContainer.style.display = 'none';
-      const img = new Image();
-      img.onload = async () => {
-        // draw into canvas then decode via ZXing from canvas data
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        ctx.drawImage(img, 0, 0);
-        try {
-          // convert canvas to blob and use codeReader.decodeFromImage
-          // BrowserMultiFormatReader provides decodeFromImageElement in some builds
-          // fallback: getImageData and use ZXing.DecodeHintType? Here we'll use codeReader.decodeFromImage
-          const result = await codeReader.decodeFromImage(img);
-          if (result && result.text) {
-            status.textContent = 'Code détecté : ' + result.text;
-            handleBarcode(result.text);
-          } else {
-            status.textContent = 'Aucun code détecté dans l\'image.';
-            notfound.style.display = 'block';
-          }
-        } catch (e) {
-          console.error(e);
-          status.textContent = 'Impossible de décoder l\'image : ' + (e.message || e);
-          notfound.style.display = 'block';
-        }
-      };
-      img.onerror = () => {
-        status.textContent = 'Impossible de charger l\'image.';
-      };
-      img.src = URL.createObjectURL(f);
-    });
-
-    // buttons
-    startBtn.addEventListener('click', async () => {
-      await initScanner();
-      await startCamera();
-    });
-    stopBtn.addEventListener('click', () => stopCamera());
-
-    // init device list on load
-    (async () => {
-      await initScanner();
-    })();
-
-    // Clean up when leaving page
-    window.addEventListener('unload', () => stopCamera());
+    startBtn.addEventListener("click", startScan);
+    stopBtn.addEventListener("click", stopScan);
   </script>
 </body>
 </html>
