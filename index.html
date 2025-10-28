@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scanner Code-Barres</title>
+  <title>Scanner Code-Barres (QuaggaJS + OpenFoodFacts)</title>
   <style>
     body {
       margin: 0;
@@ -24,21 +24,21 @@
       font-size: 1.2rem;
     }
 
-    #video {
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-    }
-
-    .scanner-container {
+    #scanner-container {
       position: relative;
       width: 100%;
       max-width: 400px;
       aspect-ratio: 3/4;
-      overflow: hidden;
       border: 2px solid red;
       border-radius: 8px;
+      overflow: hidden;
       background: #eee;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .scan-area {
@@ -48,11 +48,10 @@
       width: 80%;
       height: 30%;
       border: 2px solid red;
-      box-sizing: border-box;
       border-radius: 4px;
+      box-sizing: border-box;
     }
 
-    /* ligne rouge animée (désactivée par défaut) */
     .scan-line {
       position: absolute;
       left: 10%;
@@ -103,60 +102,69 @@
 <body>
   <h1>Scanner un Code-Barres</h1>
 
-  <div class="scanner-container">
-    <video id="video" playsinline></video>
+  <div id="scanner-container">
     <div class="scan-area"></div>
     <div class="scan-line" id="scanLine"></div>
+    <div id="interactive" class="viewport"></div>
   </div>
 
   <button id="startBtn">Démarrer le scan</button>
   <button id="stopBtn">Arrêter</button>
 
   <div id="barcode">Aucun code détecté</div>
-
   <div id="product"></div>
 
-  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
   <script>
-    const video = document.getElementById("video");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
     const barcodeEl = document.getElementById("barcode");
     const productEl = document.getElementById("product");
     const scanLine = document.getElementById("scanLine");
 
-    let codeReader = null;
     let scanning = false;
+    let lastCode = "";
 
     async function startScan() {
-      barcodeEl.textContent = "Démarrage de la caméra...";
       productEl.textContent = "";
+      barcodeEl.textContent = "Initialisation du scan...";
       scanLine.classList.add("active");
 
-      if (!codeReader) codeReader = new ZXing.BrowserMultiFormatReader();
-
-      try {
-        const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-        const deviceId = devices.length > 1 ? devices[1].deviceId : devices[0].deviceId;
-
-        barcodeEl.textContent = "Scan en cours...";
+      Quagga.init({
+        inputStream: {
+          type: "LiveStream",
+          constraints: {
+            facingMode: "environment" // caméra arrière
+          },
+          target: document.querySelector("#interactive")
+        },
+        decoder: {
+          readers: ["ean_reader", "ean_13_reader", "upc_reader", "code_128_reader"]
+        }
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          barcodeEl.textContent = "Erreur d’accès à la caméra : " + err.message;
+          return;
+        }
+        Quagga.start();
         scanning = true;
+        barcodeEl.textContent = "Scan en cours...";
+      });
 
-        codeReader.decodeFromVideoDevice(deviceId, video, async (result, err) => {
-          if (result) {
-            const code = result.text;
-            barcodeEl.textContent = "Code détecté : " + code;
+      Quagga.onDetected(async data => {
+        const code = data.codeResult.code;
+        if (code && code !== lastCode) {
+          lastCode = code;
+          barcodeEl.textContent = "Code détecté : " + code;
+          await fetchProductData(code);
+        }
+      });
+    }
 
-            if (scanning) {
-              scanning = false;
-              await fetchProductData(code);
-            }
-          }
-        });
-      } catch (e) {
-        console.error(e);
-        barcodeEl.textContent = "Erreur : " + e.message;
-      }
+    function stopScan() {
+      Quagga.stop();
+      scanning = false;
+      scanLine.classList.remove("active");
+      barcodeEl.textContent += " — Scan arrêté.";
     }
 
     async function fetchProductData(code) {
@@ -169,6 +177,7 @@
           const p = data.product;
           productEl.innerHTML = `
             <h3>${p.product_name || "Nom inconnu"}</h3>
+            ${p.image_front_url ? `<img src="${p.image_front_url}" width="100%">` : ""}
             <p><strong>Marque :</strong> ${p.brands || "N/A"}</p>
             <p><strong>Énergie :</strong> ${p.nutriments["energy-kcal"] || "?"} kcal</p>
             <p><strong>Sucres :</strong> ${p.nutriments.sugars || "?"} g</p>
@@ -179,27 +188,14 @@
         } else {
           productEl.textContent = "Produit introuvable dans Open Food Facts.";
         }
-
-        // relancer le scan
-        setTimeout(() => {
-          scanning = true;
-        }, 2000);
-
       } catch (err) {
-        productEl.textContent = "Erreur lors de la récupération des données.";
         console.error(err);
+        productEl.textContent = "Erreur lors de la récupération des données.";
       }
     }
 
-    function stopScan() {
-      if (codeReader) codeReader.reset();
-      scanLine.classList.remove("active");
-      scanning = false;
-      barcodeEl.textContent += " — Scan arrêté.";
-    }
-
-    startBtn.addEventListener("click", startScan);
-    stopBtn.addEventListener("click", stopScan);
+    document.getElementById("startBtn").addEventListener("click", startScan);
+    document.getElementById("stopBtn").addEventListener("click", stopScan);
   </script>
 </body>
 </html>
