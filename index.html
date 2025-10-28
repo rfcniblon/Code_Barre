@@ -122,6 +122,7 @@
 
     let scanning = false;
     let lastCode = "";
+    let sameCodeCount = 0;
 
     async function startScan() {
       productEl.textContent = "";
@@ -132,13 +133,21 @@
         inputStream: {
           type: "LiveStream",
           constraints: {
-            facingMode: "environment" // caméra arrière
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           },
           target: document.querySelector("#interactive")
         },
+        locator: {
+          patchSize: "medium",
+          halfSample: false
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 4,
         decoder: {
-          readers: ["ean_reader", "ean_13_reader", "upc_reader", "code_128_reader"]
-        }
+          readers: ["ean_13_reader", "ean_reader", "upc_reader"]
+        },
+        locate: true,
       }, function(err) {
         if (err) {
           console.error(err);
@@ -152,10 +161,26 @@
 
       Quagga.onDetected(async data => {
         const code = data.codeResult.code;
-        if (code && code !== lastCode) {
+
+        if (code === lastCode) {
+          sameCodeCount++;
+        } else {
           lastCode = code;
+          sameCodeCount = 1;
+        }
+
+        // on valide le code seulement s’il est lu plusieurs fois d’affilée (plus fiable)
+        if (sameCodeCount >= 3) {
+          Quagga.pause();
           barcodeEl.textContent = "Code détecté : " + code;
+          scanLine.classList.remove("active");
           await fetchProductData(code);
+          setTimeout(() => {
+            sameCodeCount = 0;
+            Quagga.start();
+            scanLine.classList.add("active");
+            barcodeEl.textContent = "Scan en cours...";
+          }, 3000);
         }
       });
     }
